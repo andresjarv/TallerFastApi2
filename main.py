@@ -1,25 +1,38 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
-# Definimos la estructura del JSON que esperas
-class Persona(BaseModel):
-    nombre: str
-    apellido: str
-    edad: int
+reservas: List[dict] = []
 
-# Esta ruta recibe el JSON
-@app.post("/persona")
-def crear_persona(persona: Persona):
-    # Aquí puedes procesar los datos
-    return {
-        "mensaje": "Datos recibidos correctamente",
-        "datos_recibidos": persona,
-        "saludo": f"Hola {persona.nombre}, bienvenido al servidor"
-    }
 
-# Esta ruta es para ver algo rápido en el navegador
+class Reserva(BaseModel):
+    id_reserva: int
+    id_sala: int
+    id_usuario: int
+    fecha: str
+    hora_inicio: str
+    hora_fin: str
+    personas: int
+    estado: str
+
+
 @app.get("/")
-def inicio():
-    return {"status": "Servidor activo", "mensaje": "Usa /docs para probar el envío de JSON"}
+def root():
+    return {"message": "Sistema de reservas de salas"}
+
+
+@app.post("/reservas")
+def crear_reserva(reserva: Reserva):
+    for r in reservas:
+        if r["id_reserva"] == reserva.id_reserva:
+            raise HTTPException(status_code=400, detail="Ya existe una reserva con ese ID")
+    
+    reservas.append(reserva.model_dump())
+    return {"message": "Reserva registrada exitosamente", "reserva": reserva}
+
+
+@app.get("/reservas")
+def obtener_reservas():
+    return {"total": len(reservas), "reservas": reservas}
